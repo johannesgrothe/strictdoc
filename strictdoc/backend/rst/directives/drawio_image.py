@@ -1,0 +1,180 @@
+import hashlib
+import os
+import re
+import shutil
+from pathlib import Path
+from typing import List, Optional
+
+from docutils import nodes
+from docutils.parsers.rst import directives
+from docutils.parsers.rst.directives.images import Image
+from py_draw_io import SETTINGS
+from py_draw_io.document import Document, NoDrawioDocumentError
+from py_draw_io.exporter import (
+    DrawIoExporter,
+    ExportFailedError,
+    IllegalExtensionError,
+    LayerConfigurationError,
+)
+
+from strictdoc.backend.rst.directives.wildcard_enhanced_image import (
+    STRICTDOC_FLAT_ASSETS_SETTING,
+    STRICTDOC_REFERENCE_PATH_SETTING,
+)
+
+STRICTDOC_DRAWIO_EXECUTABLE_PATH_SETTING = "strictdoc_drawio_executable_path"
+STRICTDOC_DRAWIO_CACHE_DIR_SETTING = "strictdoc_drawio_cache_dir"
+
+
+def _slug(value: str) -> str:
+    slug = re.sub(r"[^A-Za-z0-9_-]+", "-", value).strip("-").lower()
+    return slug if len(slug) > 0 else "page"
+
+
+class DrawioImage(Image):  # type: ignore[misc]
+    option_spec = {
+        **Image.option_spec,
+        "page": directives.unchanged,
+    }
+
+    def run(self) -> List[nodes.Node]:
+        # """
+        # .. drawio-image:: _assets/architecture.drawio
+        #    :page: Overview
+        # """
+        # We render the diagram here, not in the exported .drawio file
+        # itself: shell out to a locally installed draw.io desktop app (via
+        # py_draw_io.exporter.DrawIoExporter) to turn one page of the diagram
+        # into a PNG, then rewrite self.arguments[0] to point at that PNG and
+        # delegate to the base Image directive, exactly like
+        # WildcardEnhancedImage does for its own path rewriting.
+        assert len(self.arguments) > 0
+
+        current_reference_path = getattr(
+            self.state.document.settings,
+            STRICTDOC_REFERENCE_PATH_SETTING,
+            os.getcwd(),
+        )
+        flat_assets = getattr(
+            self.state.document.settings,
+            STRICTDOC_FLAT_ASSETS_SETTING,
+            False,
+        )
+        drawio_executable_path = getattr(
+            self.state.document.settings,
+            STRICTDOC_DRAWIO_EXECUTABLE_PATH_SETTING,
+            None,
+        )
+        cache_dir = getattr(
+            self.state.document.settings,
+            STRICTDOC_DRAWIO_CACHE_DIR_SETTING,
+            None,
+        )
+
+        if drawio_executable_path is None or cache_dir is None:
+            return self._error(
+                "the drawio-image directive requires "
+                "'drawio_executable_path' to be configured in the project "
+                "config (path to a draw.io desktop executable)."
+            )
+
+        rel_path_to_drawio = self.arguments[0]
+        # See WildcardEnhancedImage for why this rebasing is needed in
+        # flat_assets (bundle) mode.
+        if flat_assets:
+            while rel_path_to_drawio.startswith("../"):
+                rel_path_to_drawio = rel_path_to_drawio[3:]
+
+        full_path_to_drawio = os.path.normpath(
+            os.path.join(current_reference_path, rel_path_to_drawio)
+        )
+
+        if not os.path.isfile(full_path_to_drawio):
+            return self._error(
+                f"drawio-image: file not found: {rel_path_to_drawio}"
+            )
+        if not full_path_to_drawio.endswith((".drawio", ".xml")):
+            return self._error(
+                "drawio-image: expected a .drawio or .xml file, got: "
+                f"{rel_path_to_drawio}"
+            )
+
+        page_option: Optional[str] = self.options.get("page")
+        try:
+            document = Document.load(Path(full_path_to_drawio))
+            page = page_option or document.diagrams[0].name
+        except (NoDrawioDocumentError, IndexError) as exception:
+            return self._error(f"drawio-image: {exception}")
+
+        source_dir, source_file_name = os.path.split(rel_path_to_drawio)
+        source_stem = source_file_name.rsplit(".", 1)[0]
+        target_file_name = f"{source_stem}__{_slug(page)}.png"
+        target_rel_path = (
+            os.path.join(source_dir, target_file_name)
+            if len(source_dir) > 0
+            else target_file_name
+        )
+        full_target_path = os.path.normpath(
+            os.path.join(current_reference_path, target_rel_path)
+        )
+
+        try:
+            cached_png_path = self._export_cached(
+                full_path_to_drawio,
+                page,
+                cache_dir,
+                drawio_executable_path,
+            )
+        except (
+            ExportFailedError,
+            LayerConfigurationError,
+            IllegalExtensionError,
+            FileNotFoundError,
+        ) as exception:
+            return self._error(
+                f"drawio-image: failed to export '{rel_path_to_drawio}' "
+                f"(page '{page}'): {exception}"
+            )
+
+        os.makedirs(os.path.dirname(full_target_path) or ".", exist_ok=True)
+        shutil.copyfile(cached_png_path, full_target_path)
+
+        self.arguments[0] = target_rel_path
+
+        messages: List[nodes.Node] = super().run()
+        return messages
+
+    @staticmethod
+    def _export_cached(
+        full_path_to_drawio: str,
+        page: str,
+        cache_dir: Optional[str],
+        drawio_executable_path: str,
+    ) -> Path:
+        assert cache_dir is not None
+        drawio_cache_dir = Path(cache_dir) / "drawio"
+        SETTINGS.switch_cache_file(drawio_cache_dir / ".py_draw_io_cache")
+
+        source_hash = hashlib.md5(
+            full_path_to_drawio.encode("utf-8")
+        ).hexdigest()
+        cached_png_path = (
+            drawio_cache_dir / "rendered" / source_hash / f"{_slug(page)}.png"
+        )
+
+        exporter = DrawIoExporter(
+            draw_io=Path(drawio_executable_path),
+            temp_dir=drawio_cache_dir / "tmp",
+            use_cache=True,
+        )
+        exporter.export(
+            source=Path(full_path_to_drawio),
+            page=page,
+            out_path=cached_png_path,
+            limit_export=None,
+        )
+        return cached_png_path
+
+    def _error(self, message: str) -> List[nodes.Node]:
+        self.state_machine.reporter.error(message, line=self.lineno)
+        return []

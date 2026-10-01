@@ -1,0 +1,7 @@
+[DOCUMENT]
+TITLE: Hello world doc
+
+[TEXT]
+STATEMENT: >>>
+.. drawio-image:: _assets/diagram.drawio
+<<<

@@ -1,0 +1,12 @@
+#
+# This test requires a real draw.io desktop install (see strictdoc_config.py)
+# and will only pass on a machine that has one.
+#
+
+RUN: %strictdoc export %S --formats=html --output-dir %T | filecheck %s --dump-input=fail
+CHECK: Export completed.
+
+RUN: cat Output/html/15_drawio_image/input.html | filecheck %s --dump-input=fail --check-prefix=CHECK-HTML
+CHECK-HTML: <img alt="_assets/diagram__pagerino.png" src="_assets/diagram__pagerino.png" />
+
+RUN: %check_exists --file "%T/html/15_drawio_image/_assets/diagram__pagerino.png"

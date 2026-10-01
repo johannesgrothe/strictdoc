@@ -9,6 +9,11 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 path = "strictdoc/__init__.py"
 
+[tool.hatch.metadata]
+# Required for the py.draw.io dependency below, which is pinned to a private
+# git repository until it is published to PyPI.
+allow-direct-references = true
+
 [tool.hatch.build]
 exclude = [
     # Without this, the folder is still included to the output tar.gz because it has a Markdown file.
@@ -120,7 +125,11 @@ dependencies = [
 
     # Tree map graphs.
     "plotly",
-    "pandas"
+    "pandas",
+
+    # Rendering .drawio diagrams referenced from documents into images.
+    # Private pre-release dependency, not yet published to PyPI.
+    "py.draw.io @ git+ssh://git@github.com/HighBrassSolutions/py.draw.io.git@fb10_more_ruff_checks",
 ]
 # @relation(SDOC-SRS-89, scope=range_end)
 

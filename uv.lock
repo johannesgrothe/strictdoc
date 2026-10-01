@@ -398,14 +398,11 @@ wheels = [
 
 [[package]]
 name = "click"
-version = "8.1.8"
+version = "8.5.0"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b9/2e/0090cbf739cee7d23781ad4b89a9894a41538e4fcf4c31dcdd705b78eb8b/click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a", size = 226593, upload-time = "2024-12-21T18:38:44.339Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c7/0e/7fa0ef50764b67090eca4114772a2abf8b6148198475e54c660b97caeee6/click-8.5.0.tar.gz", hash = "sha256:ba0d2089de75ea0310e2dde03160e6ca10009947fb95a182f9b54021bb272e34", size = 382235, upload-time = "2026-08-26T13:33:14.56Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/d4/7ebdbd03970677812aac39c869717059dbb71a4cfc033ca6e5221787892c/click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2", size = 98188, upload-time = "2024-12-21T18:38:41.666Z" },
+    { url = "https://files.pythonhosted.org/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl", hash = "sha256:255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360", size = 125251, upload-time = "2026-08-26T13:33:12.928Z" },
 ]
 
 [[package]]
@@ -708,7 +705,7 @@ wheels = [
 
 [[package]]
 name = "fixit"
-version = "2.2.1"
+version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -718,9 +715,9 @@ dependencies = [
     { name = "tomli", marker = "python_full_version < '3.11'" },
     { name = "trailrunner" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3e/e8/1e8bda8e9e6e87dc5df4e2a9c8d1e64e21dcaf3a52fd46d1dbc0df1a6af6/fixit-2.2.1.tar.gz", hash = "sha256:98f7e30be083b4002fde8da47ae6d817e4dd174f675b848577d3a4f6e0c84954", size = 230639, upload-time = "2025-11-12T22:19:11.905Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/49/22/fc513f039c17024fde3fe2ebe3bc93e4972f7717694613b1bc109068bfc1/fixit-2.1.0.tar.gz", hash = "sha256:b31665cb6491d659d8dfef5a6078a7e9f786e299826636d03d6bd91b6f71e95b", size = 219817, upload-time = "2023-10-26T02:37:14.329Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a9/d2/dd14e5b4b2657135e075527f2b7bb606f23921d5778a0b9e8f5b6d23ff8b/fixit-2.2.1-py3-none-any.whl", hash = "sha256:943e9cdf96194b4c6dc230680dffe65035eb8fd3e7485ca99f8b417b6b5c56e4", size = 94093, upload-time = "2025-11-12T22:19:10.165Z" },
+    { url = "https://files.pythonhosted.org/packages/48/91/635a1d52f36a546449031c63e54220c8a71e898bcd9cbccfe1181fc1812c/fixit-2.1.0-py3-none-any.whl", hash = "sha256:76b286c0abb9d6a63e5c7d1b6673a041c4356e93d70472e94a9ad2c447da7753", size = 83583, upload-time = "2023-10-26T02:37:12.574Z" },
 ]
 
 [[package]]
@@ -2297,6 +2294,17 @@ wheels = [
 ]
 
 [[package]]
+name = "py-draw-io"
+version = "0.1.4"
+source = { git = "ssh://git@github.com/HighBrassSolutions/py.draw.io.git?rev=fb10_more_ruff_checks#9410056c7eb68e3e97296abb1a403fad095d7ce3" }
+dependencies = [
+    { name = "beautifulsoup4" },
+    { name = "lxml" },
+    { name = "pydantic" },
+    { name = "typer" },
+]
+
+[[package]]
 name = "pyautogui"
 version = "0.9.54"
 source = { registry = "https://pypi.org/simple" }
@@ -3306,6 +3314,7 @@ dependencies = [
     { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pandas", version = "3.0.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "plotly" },
+    { name = "py-draw-io" },
     { name = "pygments" },
     { name = "pypdf" },
     { name = "python-datauri" },
@@ -3408,6 +3417,7 @@ requires-dist = [
     { name = "orjson" },
     { name = "pandas" },
     { name = "plotly" },
+    { name = "py-draw-io", git = "ssh://git@github.com/HighBrassSolutions/py.draw.io.git?rev=fb10_more_ruff_checks" },
     { name = "pygments", specifier = "==2.21.0" },
     { name = "pypdf", specifier = "==6.*,>=6.5.0" },
     { name = "python-datauri", specifier = "==2.*,>=2.1.1" },
@@ -3744,17 +3754,17 @@ wheels = [
 
 [[package]]
 name = "typer"
-version = "0.27.1"
+version = "0.25.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
-    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "click" },
     { name = "rich" },
     { name = "shellingham" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/40/4a3db7990d1f62a53182aa96eaef57aeb2886a27f90a195bc66713565d31/typer-0.27.1.tar.gz", hash = "sha256:a79bef8469a79c45498e7b814ecf8d603cc7644e9acbd9e19cac0334240b18df", size = 203994, upload-time = "2026-08-03T14:41:03.438Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e4/51/9aed62104cea109b820bbd6c14245af756112017d309da813ef107d42e7e/typer-0.25.1.tar.gz", hash = "sha256:9616eb8853a09ffeabab1698952f33c6f29ffdbceb4eaeecf571880e8d7664cc", size = 122276, upload-time = "2026-04-30T19:32:16.964Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/43/89/9518bc0c3929bee36b3a4a8e3daddd6e03f92f9961c66d4983b837160543/typer-0.27.1-py3-none-any.whl", hash = "sha256:53150287edd11baeb4e4722c8e394fcdf8181c0ae89485cba8d25c778d5edd56", size = 122874, upload-time = "2026-08-03T14:41:04.391Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/f9/2b3ff4e56e5fa7debfaf9eb135d0da96f3e9a1d5b27222223c7296336e5f/typer-0.25.1-py3-none-any.whl", hash = "sha256:75caa44ed46a03fb2dab8808753ffacdbfea88495e74c85a28c5eefcf5f39c89", size = 58409, upload-time = "2026-04-30T19:32:18.271Z" },
 ]
 
 [[package]]
