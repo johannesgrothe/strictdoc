@@ -209,9 +209,6 @@ class ProjectConfig:
         diff_dir_revisions: Optional[Tuple[str, str]] = None,
         chromedriver: Optional[str] = None,
         chrome_binary: Optional[str] = None,
-        # Path to the draw.io desktop executable, used by the drawio-image
-        # RST directive to render .drawio files into images at export time.
-        drawio_executable_path: Optional[str] = None,
         # FIXME: The section_behavior field will be removed by the end of 2025-Q4.
         section_behavior: Optional[
             str
@@ -496,7 +493,6 @@ class ProjectConfig:
 
         self.chromedriver: Optional[str] = chromedriver
         self.chrome_binary: Optional[str] = chrome_binary
-        self.drawio_executable_path: Optional[str] = drawio_executable_path
         self.section_behavior: Optional[str] = section_behavior
 
         self.statistics_generator: Optional[str] = statistics_generator
@@ -921,17 +917,6 @@ class ProjectConfig:
         ) is not None and not os.path.isfile(chrome_binary):
             raise ValueError(
                 f"config: chrome_binary: not found at path: {chrome_binary}."
-            )
-
-        #
-        # Validate path to the draw.io executable.
-        #
-        if (
-            drawio_executable_path := self.drawio_executable_path
-        ) is not None and not os.path.isfile(drawio_executable_path):
-            raise ValueError(
-                "config: drawio_executable_path: not found at path: "
-                f"{drawio_executable_path}."
             )
 
         #
@@ -1413,7 +1398,6 @@ class ProjectConfigLoader:
         reqif_import_markup: Optional[str] = None
         chromedriver: Optional[str] = None
         chrome_binary: Optional[str] = None
-        drawio_executable_path: Optional[str] = None
         html2pdf_disable_ssl_check: bool = False
 
         section_behavior: str = ProjectConfigDefault.DEFAULT_SECTION_BEHAVIOR
@@ -1498,10 +1482,6 @@ class ProjectConfigLoader:
             chromedriver = project_content.get("chromedriver", chromedriver)
 
             chrome_binary = project_content.get("chrome_binary", chrome_binary)
-
-            drawio_executable_path = project_content.get(
-                "drawio_executable_path", drawio_executable_path
-            )
 
             html2pdf_disable_ssl_check = project_content.get(
                 "html2pdf_disable_ssl_check", html2pdf_disable_ssl_check
@@ -1589,7 +1569,6 @@ class ProjectConfigLoader:
             reqif_import_markup=reqif_import_markup,
             chromedriver=chromedriver,
             chrome_binary=chrome_binary,
-            drawio_executable_path=drawio_executable_path,
             html2pdf_disable_ssl_check=html2pdf_disable_ssl_check,
             section_behavior=section_behavior,
             statistics_generator=statistics_generator,

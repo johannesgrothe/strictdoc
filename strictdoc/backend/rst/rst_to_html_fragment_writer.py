@@ -19,7 +19,6 @@ from pygments.lexers import _load_lexers
 
 from strictdoc.backend.rst.directives.drawio_image import (
     STRICTDOC_DRAWIO_CACHE_DIR_SETTING,
-    STRICTDOC_DRAWIO_EXECUTABLE_PATH_SETTING,
     DrawioImage,
 )
 from strictdoc.backend.rst.directives.raw_html_role import raw_html_role
@@ -204,9 +203,6 @@ class RstToHtmlFragmentWriter:
             "warning_stream": warning_stream,
             STRICTDOC_REFERENCE_PATH_SETTING: self.reference_path,
             STRICTDOC_FLAT_ASSETS_SETTING: self.flat_assets,
-            STRICTDOC_DRAWIO_EXECUTABLE_PATH_SETTING: (
-                self.project_config.drawio_executable_path
-            ),
             STRICTDOC_DRAWIO_CACHE_DIR_SETTING: (
                 self.project_config.get_path_to_cache_dir()
             ),
@@ -262,9 +258,6 @@ class RstToHtmlFragmentWriter:
             "warning_stream": warning_stream,
             STRICTDOC_REFERENCE_PATH_SETTING: self.reference_path,
             STRICTDOC_FLAT_ASSETS_SETTING: self.flat_assets,
-            STRICTDOC_DRAWIO_EXECUTABLE_PATH_SETTING: (
-                self.project_config.drawio_executable_path
-            ),
             STRICTDOC_DRAWIO_CACHE_DIR_SETTING: (
                 self.project_config.get_path_to_cache_dir()
             ),

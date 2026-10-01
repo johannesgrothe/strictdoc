@@ -5,3 +5,10 @@ TITLE: Hello world doc
 STATEMENT: >>>
 .. drawio-image:: _assets/diagram.drawio
 <<<
+
+[TEXT]
+STATEMENT: >>>
+.. drawio-image:: _assets/diagram.drawio
+   :page: pagerino
+   :limit: eERzdUeXhqdjQ1jmuvG7-1
+<<<

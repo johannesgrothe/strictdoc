@@ -9,6 +9,7 @@ from docutils import nodes
 from docutils.parsers.rst import directives
 from docutils.parsers.rst.directives.images import Image
 from py_draw_io import SETTINGS
+from py_draw_io.cell_collection import CellNotFoundError, IllegalBoundaryError
 from py_draw_io.document import Document, NoDrawioDocumentError
 from py_draw_io.exporter import (
     DrawIoExporter,
@@ -22,7 +23,6 @@ from strictdoc.backend.rst.directives.wildcard_enhanced_image import (
     STRICTDOC_REFERENCE_PATH_SETTING,
 )
 
-STRICTDOC_DRAWIO_EXECUTABLE_PATH_SETTING = "strictdoc_drawio_executable_path"
 STRICTDOC_DRAWIO_CACHE_DIR_SETTING = "strictdoc_drawio_cache_dir"
 
 
@@ -35,12 +35,14 @@ class DrawioImage(Image):  # type: ignore[misc]
     option_spec = {
         **Image.option_spec,
         "page": directives.unchanged,
+        "limit": directives.unchanged,
     }
 
     def run(self) -> List[nodes.Node]:
         # """
         # .. drawio-image:: _assets/architecture.drawio
         #    :page: Overview
+        #    :limit: some-cell-id
         # """
         # We render the diagram here, not in the exported .drawio file
         # itself: shell out to a locally installed draw.io desktop app (via
@@ -60,23 +62,11 @@ class DrawioImage(Image):  # type: ignore[misc]
             STRICTDOC_FLAT_ASSETS_SETTING,
             False,
         )
-        drawio_executable_path = getattr(
-            self.state.document.settings,
-            STRICTDOC_DRAWIO_EXECUTABLE_PATH_SETTING,
-            None,
-        )
         cache_dir = getattr(
             self.state.document.settings,
             STRICTDOC_DRAWIO_CACHE_DIR_SETTING,
             None,
         )
-
-        if drawio_executable_path is None or cache_dir is None:
-            return self._error(
-                "the drawio-image directive requires "
-                "'drawio_executable_path' to be configured in the project "
-                "config (path to a draw.io desktop executable)."
-            )
 
         rel_path_to_drawio = self.arguments[0]
         # See WildcardEnhancedImage for why this rebasing is needed in
@@ -100,15 +90,20 @@ class DrawioImage(Image):  # type: ignore[misc]
             )
 
         page_option: Optional[str] = self.options.get("page")
+        limit_option: Optional[str] = self.options.get("limit")
         try:
             document = Document.load(Path(full_path_to_drawio))
             page = page_option or document.diagrams[0].name
         except (NoDrawioDocumentError, IndexError) as exception:
             return self._error(f"drawio-image: {exception}")
 
+        variant_slug = _slug(page)
+        if limit_option is not None:
+            variant_slug = f"{variant_slug}__{_slug(limit_option)}"
+
         source_dir, source_file_name = os.path.split(rel_path_to_drawio)
         source_stem = source_file_name.rsplit(".", 1)[0]
-        target_file_name = f"{source_stem}__{_slug(page)}.png"
+        target_file_name = f"{source_stem}__{variant_slug}.png"
         target_rel_path = (
             os.path.join(source_dir, target_file_name)
             if len(source_dir) > 0
@@ -122,18 +117,21 @@ class DrawioImage(Image):  # type: ignore[misc]
             cached_png_path = self._export_cached(
                 full_path_to_drawio,
                 page,
+                limit_option,
+                variant_slug,
                 cache_dir,
-                drawio_executable_path,
             )
         except (
             ExportFailedError,
             LayerConfigurationError,
             IllegalExtensionError,
+            CellNotFoundError,
+            IllegalBoundaryError,
             FileNotFoundError,
         ) as exception:
             return self._error(
                 f"drawio-image: failed to export '{rel_path_to_drawio}' "
-                f"(page '{page}'): {exception}"
+                f"(page '{page}', limit '{limit_option}'): {exception}"
             )
 
         os.makedirs(os.path.dirname(full_target_path) or ".", exist_ok=True)
@@ -148,8 +146,9 @@ class DrawioImage(Image):  # type: ignore[misc]
     def _export_cached(
         full_path_to_drawio: str,
         page: str,
+        limit_export: Optional[str],
+        variant_slug: str,
         cache_dir: Optional[str],
-        drawio_executable_path: str,
     ) -> Path:
         assert cache_dir is not None
         drawio_cache_dir = Path(cache_dir) / "drawio"
@@ -159,11 +158,13 @@ class DrawioImage(Image):  # type: ignore[misc]
             full_path_to_drawio.encode("utf-8")
         ).hexdigest()
         cached_png_path = (
-            drawio_cache_dir / "rendered" / source_hash / f"{_slug(page)}.png"
+            drawio_cache_dir / "rendered" / source_hash / f"{variant_slug}.png"
         )
 
+        # No draw_io= override: DrawIoExporter falls back to its own default
+        # (a locally installed draw.io desktop app discoverable on its own,
+        # e.g. via PATH).
         exporter = DrawIoExporter(
-            draw_io=Path(drawio_executable_path),
             temp_dir=drawio_cache_dir / "tmp",
             use_cache=True,
         )
@@ -171,7 +172,7 @@ class DrawioImage(Image):  # type: ignore[misc]
             source=Path(full_path_to_drawio),
             page=page,
             out_path=cached_png_path,
-            limit_export=None,
+            limit_export=limit_export,
         )
         return cached_png_path
 

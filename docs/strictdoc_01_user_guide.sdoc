@@ -2820,23 +2820,28 @@ directive:
     STATEMENT: >>>
     .. drawio-image:: _assets/architecture.drawio
        :page: Overview
+       :limit: some-cell-id
        :width: 600
     <<<
 
 The ``drawio-image`` directive accepts the same options as the regular RST
 ``image`` directive (``:width:``, ``:height:``, ``:align:``, ``:class:``,
-``:name:``, etc.), plus one additional option:
+``:name:``, etc.), plus two additional options:
 
 ``:page:``
     Name of the diagram page/sheet to export. If omitted, StrictDoc uses the
     first page in the file.
 
+``:limit:``
+    ID of a cell on that page. When given, StrictDoc exports only the
+    diagram elements enclosed by that cell's boundary instead of the whole
+    page.
+
 StrictDoc renders the diagram at export time by shelling out to a locally
 installed `draw.io desktop <https://github.com/jgraph/drawio-desktop>`_
-application. Configure the path to that application with the
-``drawio_executable_path`` option (see
-[LINK: SECTION-UG-Path-to-the-drawio-executable]); without it, the directive
-reports an error instead of rendering the diagram.
+application. Install it so it is discoverable on its own (for example, on
+your ``PATH``); StrictDoc does not currently offer a way to point it at a
+custom location.
 <<<
 
 [[/SECTION]]
@@ -4320,41 +4325,6 @@ template. The path can be absolute or relative to the project root.
 .. note ::
 
    An example template can be found `here <https://github.com/strictdoc-project/strictdoc/tree/main/tests/end2end/screens/pdf/view_pdf_document_custom_template/html2pdf_template>`__
-<<<
-
-[[/SECTION]]
-
-[[SECTION]]
-MID: 430b2b689bf04b2b87137284e5f4bfcc
-UID: SECTION-UG-Path-to-the-drawio-executable
-TITLE: Path to the draw.io executable
-
-[TEXT]
-MID: 78ffffffdc4c4e778535a207eda597ce
-STATEMENT: >>>
-The ``drawio-image`` RST directive (see
-[LINK: SECTION-UG-Drawio-image-directive]) renders ``.drawio`` files into
-images by shelling out to a locally installed draw.io desktop application.
-
-Configure the path to that application with the ``drawio_executable_path``
-option:
-
-.. code:: python
-
-    from strictdoc.core.project_config import ProjectConfig
-
-
-    def create_config() -> ProjectConfig:
-        config = ProjectConfig(
-            drawio_executable_path="/Applications/draw.io.app/Contents/MacOS/draw.io",
-        )
-        return config
-
-.. note::
-
-   This is a local path on the machine that runs ``strictdoc export``. The
-   draw.io desktop application is not bundled with StrictDoc and must be
-   installed separately on that machine.
 <<<
 
 [[/SECTION]]
