@@ -21,20 +21,14 @@ def _fake_export_writes_file(_self, *, out_path, **_kwargs):
         file_.write(b"fake-png-bytes")
 
 
-def _project_config_with_cache_dir(tmp_path) -> ProjectConfig:
-    project_config = ProjectConfig.default_config()
-    project_config.get_path_to_cache_dir = lambda: str(tmp_path / "cache")
-    return project_config
-
-
-def test_drawio_image_01_default_page(tmp_path, monkeypatch):
+def test_drawio_image_01_default_page(monkeypatch):
     monkeypatch.setattr(DrawIoExporter, "export", _fake_export_writes_file)
 
     rst_input = """
 .. drawio-image:: _assets/diagram.drawio
 """.lstrip()
 
-    project_config = _project_config_with_cache_dir(tmp_path)
+    project_config = ProjectConfig.default_config()
     html_output = RstToHtmlFragmentWriter(
         project_config=project_config,
         context_document=None,
@@ -56,7 +50,7 @@ def test_drawio_image_01_default_page(tmp_path, monkeypatch):
             os.remove(RENDERED_PNG_PATH)
 
 
-def test_drawio_image_02_explicit_page(tmp_path, monkeypatch):
+def test_drawio_image_02_explicit_page(monkeypatch):
     monkeypatch.setattr(DrawIoExporter, "export", _fake_export_writes_file)
 
     rst_input = """
@@ -64,7 +58,7 @@ def test_drawio_image_02_explicit_page(tmp_path, monkeypatch):
    :page: pagerino
 """.lstrip()
 
-    project_config = _project_config_with_cache_dir(tmp_path)
+    project_config = ProjectConfig.default_config()
     html_output = RstToHtmlFragmentWriter(
         project_config=project_config,
         context_document=None,
@@ -78,12 +72,12 @@ def test_drawio_image_02_explicit_page(tmp_path, monkeypatch):
             os.remove(RENDERED_PNG_PATH)
 
 
-def test_drawio_image_03_missing_file(tmp_path):
+def test_drawio_image_03_missing_file():
     rst_input = """
 .. drawio-image:: _assets/does_not_exist.drawio
 """.lstrip()
 
-    project_config = _project_config_with_cache_dir(tmp_path)
+    project_config = ProjectConfig.default_config()
     html_output, error = RstToHtmlFragmentWriter(
         project_config=project_config,
         context_document=None,
@@ -103,6 +97,9 @@ def test_drawio_image_06_explicit_limit(tmp_path, monkeypatch):
             file_.write(b"fake-png-bytes")
 
     monkeypatch.setattr(DrawIoExporter, "_export", _fake_private_export)
+    # DrawIoExporter's default temp_dir is a relative "temp" path: keep it
+    # out of the repo by running from an isolated directory.
+    monkeypatch.chdir(tmp_path)
 
     rst_input = """
 .. drawio-image:: _assets/diagram.drawio
@@ -110,7 +107,7 @@ def test_drawio_image_06_explicit_limit(tmp_path, monkeypatch):
    :limit: eERzdUeXhqdjQ1jmuvG7-1
 """.lstrip()
 
-    project_config = _project_config_with_cache_dir(tmp_path)
+    project_config = ProjectConfig.default_config()
     html_output = RstToHtmlFragmentWriter(
         project_config=project_config,
         context_document=None,
@@ -132,15 +129,18 @@ def test_drawio_image_06_explicit_limit(tmp_path, monkeypatch):
             os.remove(rendered_png_path)
 
 
-def test_drawio_image_07_invalid_limit(tmp_path):
-    # No monkeypatching: an unknown cell id is rejected by py_draw_io's own
-    # lookup before anything would be shelled out to a real binary.
+def test_drawio_image_07_invalid_limit(tmp_path, monkeypatch):
+    # No monkeypatching of the exporter: an unknown cell id is rejected by
+    # py_draw_io's own lookup before anything would be shelled out to a real
+    # binary. Still isolate the default relative "temp" dir from the repo.
+    monkeypatch.chdir(tmp_path)
+
     rst_input = """
 .. drawio-image:: _assets/diagram.drawio
    :limit: does-not-exist
 """.lstrip()
 
-    project_config = _project_config_with_cache_dir(tmp_path)
+    project_config = ProjectConfig.default_config()
     html_output, error = RstToHtmlFragmentWriter(
         project_config=project_config,
         context_document=None,
@@ -150,7 +150,7 @@ def test_drawio_image_07_invalid_limit(tmp_path):
     assert "failed to export" in error
 
 
-def test_drawio_image_05_export_failure(tmp_path, monkeypatch):
+def test_drawio_image_05_export_failure(monkeypatch):
     def _raise(_self, **_kwargs):
         raise ExportFailedError(1)
 
@@ -160,7 +160,7 @@ def test_drawio_image_05_export_failure(tmp_path, monkeypatch):
 .. drawio-image:: _assets/diagram.drawio
 """.lstrip()
 
-    project_config = _project_config_with_cache_dir(tmp_path)
+    project_config = ProjectConfig.default_config()
     html_output, error = RstToHtmlFragmentWriter(
         project_config=project_config,
         context_document=None,

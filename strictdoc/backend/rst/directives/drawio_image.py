@@ -1,14 +1,11 @@
-import hashlib
 import os
 import re
-import shutil
 from pathlib import Path
 from typing import List, Optional
 
 from docutils import nodes
 from docutils.parsers.rst import directives
 from docutils.parsers.rst.directives.images import Image
-from py_draw_io import SETTINGS
 from py_draw_io.cell_collection import CellNotFoundError, IllegalBoundaryError
 from py_draw_io.document import Document, NoDrawioDocumentError
 from py_draw_io.exporter import (
@@ -22,8 +19,6 @@ from strictdoc.backend.rst.directives.wildcard_enhanced_image import (
     STRICTDOC_FLAT_ASSETS_SETTING,
     STRICTDOC_REFERENCE_PATH_SETTING,
 )
-
-STRICTDOC_DRAWIO_CACHE_DIR_SETTING = "strictdoc_drawio_cache_dir"
 
 
 def _slug(value: str) -> str:
@@ -61,11 +56,6 @@ class DrawioImage(Image):  # type: ignore[misc]
             self.state.document.settings,
             STRICTDOC_FLAT_ASSETS_SETTING,
             False,
-        )
-        cache_dir = getattr(
-            self.state.document.settings,
-            STRICTDOC_DRAWIO_CACHE_DIR_SETTING,
-            None,
         )
 
         rel_path_to_drawio = self.arguments[0]
@@ -113,13 +103,15 @@ class DrawioImage(Image):  # type: ignore[misc]
             os.path.join(current_reference_path, target_rel_path)
         )
 
+        # No draw_io= override and no custom temp_dir/use_cache: DrawIoExporter
+        # falls back to its own defaults (a locally installed draw.io desktop
+        # app discoverable on its own, e.g. via PATH; no caching between runs).
         try:
-            cached_png_path = self._export_cached(
-                full_path_to_drawio,
-                page,
-                limit_option,
-                variant_slug,
-                cache_dir,
+            DrawIoExporter().export(
+                source=Path(full_path_to_drawio),
+                page=page,
+                out_path=Path(full_target_path),
+                limit_export=limit_option,
             )
         except (
             ExportFailedError,
@@ -134,47 +126,10 @@ class DrawioImage(Image):  # type: ignore[misc]
                 f"(page '{page}', limit '{limit_option}'): {exception}"
             )
 
-        os.makedirs(os.path.dirname(full_target_path) or ".", exist_ok=True)
-        shutil.copyfile(cached_png_path, full_target_path)
-
         self.arguments[0] = target_rel_path
 
         messages: List[nodes.Node] = super().run()
         return messages
-
-    @staticmethod
-    def _export_cached(
-        full_path_to_drawio: str,
-        page: str,
-        limit_export: Optional[str],
-        variant_slug: str,
-        cache_dir: Optional[str],
-    ) -> Path:
-        assert cache_dir is not None
-        drawio_cache_dir = Path(cache_dir) / "drawio"
-        SETTINGS.switch_cache_file(drawio_cache_dir / ".py_draw_io_cache")
-
-        source_hash = hashlib.md5(
-            full_path_to_drawio.encode("utf-8")
-        ).hexdigest()
-        cached_png_path = (
-            drawio_cache_dir / "rendered" / source_hash / f"{variant_slug}.png"
-        )
-
-        # No draw_io= override: DrawIoExporter falls back to its own default
-        # (a locally installed draw.io desktop app discoverable on its own,
-        # e.g. via PATH).
-        exporter = DrawIoExporter(
-            temp_dir=drawio_cache_dir / "tmp",
-            use_cache=True,
-        )
-        exporter.export(
-            source=Path(full_path_to_drawio),
-            page=page,
-            out_path=cached_png_path,
-            limit_export=limit_export,
-        )
-        return cached_png_path
 
     def _error(self, message: str) -> List[nodes.Node]:
         self.state_machine.reporter.error(message, line=self.lineno)

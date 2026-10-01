@@ -17,10 +17,7 @@ from docutils.utils import SystemMessage
 from markupsafe import Markup
 from pygments.lexers import _load_lexers
 
-from strictdoc.backend.rst.directives.drawio_image import (
-    STRICTDOC_DRAWIO_CACHE_DIR_SETTING,
-    DrawioImage,
-)
+from strictdoc.backend.rst.directives.drawio_image import DrawioImage
 from strictdoc.backend.rst.directives.raw_html_role import raw_html_role
 from strictdoc.backend.rst.directives.sphinx_style_math import (
     MathDirective,
@@ -110,8 +107,6 @@ class RstToHtmlFragmentWriter:
         else:
             self.source_path = "<string>"
         self.context_document: Optional[SDocDocument] = context_document
-
-        self.project_config: ProjectConfig = project_config
 
         self.flat_assets: bool = flat_assets
 
@@ -203,9 +198,6 @@ class RstToHtmlFragmentWriter:
             "warning_stream": warning_stream,
             STRICTDOC_REFERENCE_PATH_SETTING: self.reference_path,
             STRICTDOC_FLAT_ASSETS_SETTING: self.flat_assets,
-            STRICTDOC_DRAWIO_CACHE_DIR_SETTING: (
-                self.project_config.get_path_to_cache_dir()
-            ),
         }
 
         output = publish_parts(
@@ -258,9 +250,6 @@ class RstToHtmlFragmentWriter:
             "warning_stream": warning_stream,
             STRICTDOC_REFERENCE_PATH_SETTING: self.reference_path,
             STRICTDOC_FLAT_ASSETS_SETTING: self.flat_assets,
-            STRICTDOC_DRAWIO_CACHE_DIR_SETTING: (
-                self.project_config.get_path_to_cache_dir()
-            ),
         }
 
         try:
