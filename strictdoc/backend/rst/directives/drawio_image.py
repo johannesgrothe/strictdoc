@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from docutils import nodes
 from docutils.parsers.rst import directives
@@ -27,13 +27,12 @@ def _slug(value: str) -> str:
 
 
 class DrawioImage(Image):  # type: ignore[misc]
-    option_spec = {
-        **Image.option_spec,
+    option_spec = Image.option_spec | {
         "page": directives.unchanged,
         "limit": directives.unchanged,
     }
 
-    def run(self) -> List[nodes.Node]:
+    def run(self) -> Sequence[nodes.Node]:
         # """
         # .. drawio-image:: _assets/architecture.drawio
         #    :page: Overview
@@ -128,7 +127,7 @@ class DrawioImage(Image):  # type: ignore[misc]
 
         self.arguments[0] = target_rel_path
 
-        messages: List[nodes.Node] = super().run()
+        messages: Sequence[nodes.Node] = super().run()
         return messages
 
     def _error(self, message: str) -> List[nodes.Node]:
