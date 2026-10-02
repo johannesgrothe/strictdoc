@@ -14,6 +14,7 @@ from py_draw_io.exporter import (
     IllegalExtensionError,
     LayerConfigurationError,
 )
+from py_draw_io.geometry_cell import GeometryCell
 
 from strictdoc.backend.rst.directives.wildcard_enhanced_image import (
     STRICTDOC_FLAT_ASSETS_SETTING,
@@ -31,6 +32,30 @@ class DrawioImage(Image):  # type: ignore[misc]
         "page": directives.unchanged,
         "limit": directives.unchanged,
     }
+
+    MAX_VIEWPORT_IMAGE_HEIGHT = 60
+
+    @classmethod
+    def _get_viewport_image_height(cls, source_file: Path, page: str, element_id: Optional[str]) -> int:
+        """
+        Calculates the image height relative to the browser viewport
+        """
+        if element_id is None:
+            return cls.MAX_VIEWPORT_IMAGE_HEIGHT
+
+        diagram = Document.load(source_file).get_diagram(page)
+        limit_geometry = diagram.find_by_id(element_id)
+
+        if not isinstance(limit_geometry, GeometryCell):
+            raise ValueError(
+                f"limit geometry ({element_id}) is no geometry element"
+            )
+        # Taller elements (smaller aspect ratio) get more of the viewport,
+        # capped so that no diagram takes up most of the screen.
+        return min(
+            cls.MAX_VIEWPORT_IMAGE_HEIGHT,
+            25 + int((1 / limit_geometry.aspect_ratio) * 13),
+        )
 
     def run(self) -> Sequence[nodes.Node]:
         # """
@@ -64,24 +89,14 @@ class DrawioImage(Image):  # type: ignore[misc]
             while rel_path_to_drawio.startswith("../"):
                 rel_path_to_drawio = rel_path_to_drawio[3:]
 
-        full_path_to_drawio = os.path.normpath(
+        full_path_to_drawio = Path(os.path.normpath(
             os.path.join(current_reference_path, rel_path_to_drawio)
-        )
-
-        if not os.path.isfile(full_path_to_drawio):
-            return self._error(
-                f"drawio-image: file not found: {rel_path_to_drawio}"
-            )
-        if not full_path_to_drawio.endswith((".drawio", ".xml")):
-            return self._error(
-                "drawio-image: expected a .drawio or .xml file, got: "
-                f"{rel_path_to_drawio}"
-            )
+        ))
 
         page_option: Optional[str] = self.options.get("page")
         limit_option: Optional[str] = self.options.get("limit")
         try:
-            document = Document.load(Path(full_path_to_drawio))
+            document = Document.load(full_path_to_drawio)
             page = page_option or document.diagrams[0].name
         except (NoDrawioDocumentError, IndexError) as exception:
             return self._error(f"drawio-image: {exception}")
@@ -106,19 +121,24 @@ class DrawioImage(Image):  # type: ignore[misc]
         # falls back to its own defaults (a locally installed draw.io desktop
         # app discoverable on its own, e.g. via PATH; no caching between runs).
         try:
+            height = self._get_viewport_image_height(
+                full_path_to_drawio, page, limit_option
+            )
+
             DrawIoExporter().export(
-                source=Path(full_path_to_drawio),
+                source=full_path_to_drawio,
                 page=page,
                 out_path=Path(full_target_path),
                 limit_export=limit_option,
             )
         except (
-            ExportFailedError,
-            LayerConfigurationError,
-            IllegalExtensionError,
-            CellNotFoundError,
-            IllegalBoundaryError,
-            FileNotFoundError,
+                ExportFailedError,
+                LayerConfigurationError,
+                IllegalExtensionError,
+                CellNotFoundError,
+                IllegalBoundaryError,
+                FileNotFoundError,
+                ValueError,
         ) as exception:
             return self._error(
                 f"drawio-image: failed to export '{rel_path_to_drawio}' "
@@ -126,6 +146,7 @@ class DrawioImage(Image):  # type: ignore[misc]
             )
 
         self.arguments[0] = target_rel_path
+        self.options.setdefault("height", f"{height}vh")
 
         messages: Sequence[nodes.Node] = super().run()
         return messages
